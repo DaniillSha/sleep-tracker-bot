@@ -43,7 +43,7 @@ async def save_sleep_entry(telegram_id: int, data: dict) -> SleepEntry:
         # Преобразуем имена полей в соответствии с моделью
         entry_data = {
             'telegram_id': telegram_id,
-            'date': datetime.now().date(),
+            'date': datetime.date.today(),
             'feeling_score': data.get('feeling'),
             'sleep_hours': data.get('sleep_hours'),
             'stress_score': data.get('stress_level'),
