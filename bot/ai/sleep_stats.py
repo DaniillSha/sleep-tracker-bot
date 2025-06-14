@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 import logging
 from bot.ai.prompts import format_sleep_recommendation_prompt
 from bot.ai.generator import generate_response
+from .sleep_visualization import create_sleep_visualizations
 
 logger = logging.getLogger(__name__)
 
@@ -61,6 +62,14 @@ async def calculate_sleep_stats(df: pd.DataFrame) -> Dict:
         except Exception as e:
             food_wake_corr = 0.0
         
+        # Создаем визуализации
+        try:
+            plot1_path, plot2_path = create_sleep_visualizations(df)
+        except Exception as e:
+            logger.error(f"Error creating visualizations: {e}")
+            plot1_path = None
+            plot2_path = None
+        
         # Формируем статистику
         stats_dict = {
             'complete_records': complete_records,
@@ -74,7 +83,9 @@ async def calculate_sleep_stats(df: pd.DataFrame) -> Dict:
             'avg_bedtime': avg_bedtime,
             'dreams_percentage': dreams_percentage,
             'stress_feeling_corr': stress_feeling_corr,
-            'food_wake_corr': food_wake_corr
+            'food_wake_corr': food_wake_corr,
+            'plot1_path': plot1_path,
+            'plot2_path': plot2_path
         }
         
         # Генерация рекомендации через существующую функцию
@@ -82,12 +93,14 @@ async def calculate_sleep_stats(df: pd.DataFrame) -> Dict:
             prompt = format_sleep_recommendation_prompt(stats_dict)
             recommendation = await generate_response(prompt)
         except Exception as e:
+            logger.error(f"Error generating recommendation: {e}")
             recommendation = "Продолжайте вести дневник сна для отслеживания своих привычек"
         
         stats_dict['recommendation'] = recommendation
         return stats_dict
         
     except Exception as e:
+        logger.error(f"Error in calculate_sleep_stats: {e}")
         raise
 
 def format_stats_message(stats: Dict) -> str:
