@@ -1,14 +1,15 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
+# Основное меню
 main_menu_kb = InlineKeyboardMarkup(
     inline_keyboard=[
         [InlineKeyboardButton(text="🛌 Анализ сна", callback_data="sleep_analysis")],
         [InlineKeyboardButton(text="⏰ Настройка уведомления", callback_data="notification_settings")],
-        [InlineKeyboardButton(text="📅 История сна", callback_data="sleep_analysis")],
         [InlineKeyboardButton(text="📊 Получить аналитику сна", callback_data="get_stat")]
     ]
 )
 
+# Клавиатура для анализа сна
 analyze_kb = InlineKeyboardMarkup(
     inline_keyboard=[
         [InlineKeyboardButton(text="🛌 Анализ сна", callback_data="sleep_analysis")]
@@ -16,17 +17,20 @@ analyze_kb = InlineKeyboardMarkup(
 )
 
 def scale_1_to_10_kb():
+    # Клавиатура для оценки по шкале от 1 до 10
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text=str(i), callback_data=f"scale_{i}") for i in range(1, 6)],
         [InlineKeyboardButton(text=str(i), callback_data=f"scale_{i}") for i in range(6, 11)]
     ])
 
 def scale_1_to_5_kb():
+    # Клавиатура для оценки по шкале от 0 до 5
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text=str(i), callback_data=f"scale_{i}") for i in range(0, 3)],
         [InlineKeyboardButton(text=str(i), callback_data=f"scale_{i}") for i in range(3, 6)]
     ])
 
+# Клавиатура для ответов Да/Нет
 yes_no_kb = InlineKeyboardMarkup(inline_keyboard=[
     [
         InlineKeyboardButton(text="Да", callback_data="yes"),
@@ -34,10 +38,12 @@ yes_no_kb = InlineKeyboardMarkup(inline_keyboard=[
     ]
 ])
 
+# Клавиатура для возврата назад
 back_kb = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text="⬅️ Назад", callback_data="back")]
 ])
 
+# Клавиатура для выбора типа пищи
 food_kb = InlineKeyboardMarkup(
     inline_keyboard=[
         [InlineKeyboardButton(text="Тяжёлая пища", callback_data="heavy")],
@@ -45,27 +51,29 @@ food_kb = InlineKeyboardMarkup(
         [InlineKeyboardButton(text="Не ел", callback_data="none")]
 ])
 
+# Клавиатура для возврата в меню
 back_to_menu = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text="📲 В меню", callback_data="show_main_menu")]
 ])
 
+# Клавиатура настроек уведомлений
 notification_settings_kb = InlineKeyboardMarkup(
     inline_keyboard=[
         [InlineKeyboardButton(text="🔔 Включить уведомления", callback_data="enable_notifications")],
-        [InlineKeyboardButton(text="◀️ Назад", callback_data="show_main_menu")]
+        [InlineKeyboardButton(text="📲 В меню", callback_data="show_main_menu")]
     ]
 )
 
-
+# Клавиатура для отключения уведомлений
 notification_enabled_kb = InlineKeyboardMarkup(
     inline_keyboard=[
         [InlineKeyboardButton(text=f"🚫 Отключить уведомления", callback_data="disable_notifications")],
-        [InlineKeyboardButton(text="◀️ Назад", callback_data="show_main_menu")]
+        [InlineKeyboardButton(text="📲 В меню", callback_data="show_main_menu")]
     ]
 )
 
 def timezone_kb() -> InlineKeyboardMarkup:
-    """Клавиатура для выбора часового пояса относительно МСК"""
+    # Клавиатура для выбора часового пояса относительно МСК
     keyboard = [
         [
             InlineKeyboardButton(text="МСК-8", callback_data="tz_-8"),

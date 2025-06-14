@@ -1,10 +1,25 @@
 import datetime
 from datetime import timezone
-from sqlalchemy import Column, Integer, String, Float, Boolean, Date, Time, ForeignKey, Text, BigInteger, DateTime
+
+from sqlalchemy import (
+    BigInteger,
+    Boolean,
+    Column,
+    Date,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    Time,
+)
 from sqlalchemy.orm import relationship
+
 from bot.database.connect import Base
 
 class User(Base):
+    # Модель пользователя
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True)
@@ -16,6 +31,7 @@ class User(Base):
 
 
 class SleepEntry(Base):
+    # Модель записи о сне
     __tablename__ = "sleep_entries"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -23,18 +39,18 @@ class SleepEntry(Base):
 
     date = Column(Date, default=datetime.date.today)
 
-    feeling_score = Column(Integer)
-    had_dreams = Column(Boolean)
-    dream_text = Column(Text)
+    feeling_score = Column(Integer)  # Оценка самочувствия
+    had_dreams = Column(Boolean)  # Наличие снов
+    dream_text = Column(Text)  # Описание снов
 
-    woke_up = Column(Boolean)
-    tired = Column(Boolean)
+    woke_up = Column(Boolean)  # Пробуждения
+    tired = Column(Boolean)  # Усталость
 
-    sleep_hours = Column(Float)
-    stress_score = Column(Integer)
+    sleep_hours = Column(Float)  # Часы сна
+    stress_score = Column(Integer)  # Уровень стресса
 
-    food_type = Column(String)
-    sleep_time = Column(Time)
-    extra_notes = Column(Text)
+    food_type = Column(String)  # Тип пищи перед сном
+    sleep_time = Column(Time)  # Время сна
+    extra_notes = Column(Text)  # Дополнительные заметки
 
     user = relationship("User", back_populates="sleep_entries")

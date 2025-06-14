@@ -1,16 +1,17 @@
-from aiogram import Router, F
-from aiogram.types import CallbackQuery, Message
-from aiogram.fsm.context import FSMContext
-from bot.keyboards import notification_settings_kb, notification_enabled_kb
-from bot.database.db_service import get_user_notifications, enable_notifications, disable_notifications
-from bot.states import NotificationSettings
 import logging
 import re
+
+from aiogram import F, Router
+from aiogram.fsm.context import FSMContext
+from aiogram.types import CallbackQuery, Message
+
+from bot.database.db_service import disable_notifications, enable_notifications, get_user_notifications
+from bot.keyboards import notification_enabled_kb, notification_settings_kb
+from bot.states import NotificationSettings
 
 logger = logging.getLogger(__name__)
 router = Router()
 
-    #bot/handlers/notifications.py
 @router.callback_query(F.data == "notification_settings")
 async def show_notification_settings(callback: CallbackQuery):
     # Показывает меню настроек уведомлений
@@ -32,7 +33,6 @@ async def show_notification_settings(callback: CallbackQuery):
         # Если уведомления выключены, показываем кнопку включения
         await callback.message.edit_text(text, reply_markup=notification_settings_kb)
 
-    #bot/handlers/notifications.py
 @router.callback_query(F.data == "enable_notifications")
 async def enable_notifications_handler(callback: CallbackQuery, state: FSMContext):
     # Запрашивает время уведомлений у пользователя
@@ -49,7 +49,7 @@ async def set_notification_time(message: Message, state: FSMContext):
     # Проверяем формат времени (ЧЧ:ММ)
     if not re.match(r"^([01]?[0-9]|2[0-3]):[0-5][0-9]$", message.text):
         await message.answer(
-            "❌ Неверный формат времени. Пожалуйста, введите время в формате ЧЧ:ММ (например, 08:30):",
+            "Неверный формат времени. Пожалуйста, введите время в формате ЧЧ:ММ (например, 08:30):",
             reply_markup=notification_settings_kb
         )
         return
@@ -57,20 +57,21 @@ async def set_notification_time(message: Message, state: FSMContext):
     try:
         # Сохраняем настройки в базу данных
         await enable_notifications(message.from_user.id, message.text)
-        logger.info(f"Notification settings saved for user {message.from_user.id}: time={message.text}")
+        logger.info(f"Настройки уведомлений сохранены для пользователя {message.from_user.id}: время={message.text}")
         
         # Показываем подтверждение
         await message.answer(
-            f"✅ Уведомления включены!\nВы будете получать напоминания каждый день в {message.text}",
+            f"Уведомления включены!\nВы будете получать напоминания каждый день в {message.text}",
             reply_markup=notification_enabled_kb
         )
         await state.clear()
     except Exception as e:
+        logger.error(f"Ошибка при сохранении настроек уведомлений: {e}")
         await message.answer(
-            "❌ Произошла ошибка при настройке уведомлений. Попробуйте позже.",
+            "Произошла ошибка при настройке уведомлений. Попробуйте позже.",
             reply_markup=notification_settings_kb
         )
-    #bot/handlers/notifications.py
+
 @router.callback_query(F.data == "disable_notifications")
 async def disable_notifications_handler(callback: CallbackQuery):
     # Отключает уведомления
@@ -79,14 +80,16 @@ async def disable_notifications_handler(callback: CallbackQuery):
     try:
         # Отключаем уведомления в базе данных
         await disable_notifications(callback.from_user.id)
+        logger.info(f"Уведомления отключены для пользователя {callback.from_user.id}")
         
         # Показываем подтверждение
         await callback.message.edit_text(
-            "✅ Уведомления отключены!",
+            "Уведомления отключены!",
             reply_markup=notification_settings_kb
         )
     except Exception as e:
+        logger.error(f"Ошибка при отключении уведомлений: {e}")
         await callback.message.edit_text(
-            "❌ Произошла ошибка при отключении уведомлений. Попробуйте позже.",
+            "Произошла ошибка при отключении уведомлений. Попробуйте позже.",
             reply_markup=notification_settings_kb
         ) 

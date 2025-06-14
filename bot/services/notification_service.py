@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from sqlalchemy import select
@@ -6,10 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from bot.database.db_service import SessionLocal
 from bot.database.tables import User
 from bot.keyboards.InlineButtons import analyze_kb
-import logging
 
 logger = logging.getLogger(__name__)
-    #bot/services/notification_services.py
+
 async def check_notifications(bot):
     # Проверяет и отправляет уведомления пользователям
     while True:
@@ -40,16 +40,16 @@ async def check_notifications(bot):
                             )
                             logger.info(f"Успешно отправлено уведомление для {user.telegram_id}")
                     except Exception as e:
-                        logger.error(f"Ошибка {user.telegram_id}: {e}")
+                        logger.error(f"Ошибка при отправке уведомления пользователю {user.telegram_id}: {e}")
                 
         except Exception as e:
-            logger.error(f"Ошибка {e}")
+            logger.error(f"Ошибка при проверке уведомлений: {e}")
         
         # Ждем 1 минуту перед следующей проверкой
         await asyncio.sleep(60)
 
 async def start_notification_service(bot):
-    """Запускает сервис уведомлений"""
-    logger.info("Starting notification service...")
+    # Запускает сервис уведомлений
+    logger.info("Запуск сервиса уведомлений...")
     asyncio.create_task(check_notifications(bot))
-    logger.info("Notification service started successfully") 
+    logger.info("Сервис уведомлений успешно запущен") 

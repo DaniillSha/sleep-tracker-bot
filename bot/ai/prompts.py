@@ -1,5 +1,6 @@
     # bot/ai/prompts.py
 def get_sleep_analysis_prompt(data: dict, additional_info: str = None) -> str:
+    # Генерирует промпт для анализа сна на основе данных пользователя
     base_prompt = """
 Ты — нейросеть, встроенная в backend Telegram-бота, который помогает пользователям анализировать качество сна.
 Ты получаешь структурированные данные от пользователя и на их основе даёшь короткий, точный и понятный анализ, написанный простым, человеческим языком. 
@@ -70,7 +71,7 @@ SLEEP_RECOMMENDATION_PROMPT = """Ты - эксперт по сну и здоро
 Сгенерируй рекомендацию на русском языке."""
 
 def format_sleep_recommendation_prompt(stats: dict) -> str:
-    """Форматирует промпт для генерации рекомендации по сну"""
+    # Форматирует промпт для генерации рекомендации по сну
     return SLEEP_RECOMMENDATION_PROMPT.format(
         avg_feeling=stats['avg_feeling'],
         avg_sleep=stats['avg_sleep'],

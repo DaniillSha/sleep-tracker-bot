@@ -1,23 +1,24 @@
+import logging
 import os
 from datetime import datetime
-from aiogram import Router, F, types
-from aiogram.types import CallbackQuery, Message
+
+import pandas as pd
+from aiogram import F, Router, types
 from aiogram.fsm.context import FSMContext
-from bot.database.db_service import get_sleep_entries_for_month
+from aiogram.types import CallbackQuery, Message
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from bot.ai.sleep_stats import calculate_sleep_stats, format_stats_message
 from bot.ai.sleep_visualization import create_sleep_visualizations
+from bot.database.db_service import get_sleep_entries_for_month
 from bot.keyboards import back_to_menu
-import pandas as pd
-from sqlalchemy.ext.asyncio import AsyncSession
-import logging
-import time
 
 logger = logging.getLogger(__name__)
 router = Router()
 
 @router.callback_query(F.data == "get_stat")
 async def handle_get_stat(callback: CallbackQuery, session: AsyncSession):
-    """Обработчик запроса анализа сна"""
+    # Обработчик запроса анализа сна
     try:
         # Сразу отвечаем на callback, чтобы избежать таймаута
         await callback.answer()
@@ -63,26 +64,26 @@ async def handle_get_stat(callback: CallbackQuery, session: AsyncSession):
         
         # Генерируем графики
         try:
-            logger.info("Starting plots generation...")
+            logger.info("Начинаю генерацию графиков...")
             plot1_path, plot2_path = create_sleep_visualizations(df)
-            logger.info(f"Plots generated at paths: {plot1_path}, {plot2_path}")
+            logger.info(f"Графики сгенерированы по путям: {plot1_path}, {plot2_path}")
             
             # Отправляем графики
             if plot1_path and os.path.exists(plot1_path):
-                logger.info("Sending first plot...")
+                logger.info("Отправляю первый график...")
                 await callback.message.answer_photo(
                     types.FSInputFile(plot1_path),
                     caption="📊 Распределение продолжительности сна по категориям"
                 )
-                logger.info("First plot sent successfully")
+                logger.info("Первый график успешно отправлен")
             
             if plot2_path and os.path.exists(plot2_path):
-                logger.info("Sending second plot...")
+                logger.info("Отправляю второй график...")
                 await callback.message.answer_photo(
                     types.FSInputFile(plot2_path),
                     caption="📈 Тренд продолжительности сна и самочувствия"
                 )
-                logger.info("Second plot sent successfully")
+                logger.info("Второй график успешно отправлен")
                 
         except Exception as e:
             logger.error(f"Произошла ошибка при генерации графиков: {e}", exc_info=True)

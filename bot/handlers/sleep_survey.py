@@ -1,3 +1,5 @@
+import logging
+
 from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
@@ -7,16 +9,19 @@ from bot.states import SleepSurvey
 from bot.ai.prompts import get_sleep_analysis_prompt
 from bot.database.db_service import save_sleep_entry
 
+logger = logging.getLogger(__name__)
 router = Router()
 
 @router.callback_query(F.data == "sleep_analysis")
 async def start_sleep_survey(callback: CallbackQuery, state: FSMContext):
+    # Начало опроса о сне
     await callback.message.answer("Как вы себя чувствуете сейчас? (оцените от 1 до 10)", reply_markup=scale_1_to_10_kb())
     await state.set_state(SleepSurvey.feeling)
     await callback.answer()
 
 @router.callback_query(SleepSurvey.feeling, F.data.startswith("scale_"))
 async def process_feeling(callback: CallbackQuery, state: FSMContext):
+    # Обработка оценки самочувствия
     await callback.answer()
     sleep_score = int(callback.data.split("_")[1])
     await state.update_data(feeling=sleep_score)
@@ -26,6 +31,7 @@ async def process_feeling(callback: CallbackQuery, state: FSMContext):
 
 @router.callback_query(SleepSurvey.had_dreams, F.data.in_({"yes", "no"}))
 async def process_dreams(callback: CallbackQuery, state: FSMContext):
+    # Обработка информации о снах
     await callback.answer()
     if callback.data == "yes":
         # next вопрос
@@ -40,12 +46,14 @@ async def process_dreams(callback: CallbackQuery, state: FSMContext):
 
 @router.message(SleepSurvey.dream_content, F.text)
 async def process_dream_content(message: Message, state: FSMContext):
+    # Обработка описания снов
     await state.update_data(dream_content=message.text)
     await message.answer("Просыпались ли вы среди ночи?", reply_markup=yes_no_kb)
     await state.set_state(SleepSurvey.woke_up)
 
 @router.callback_query(SleepSurvey.woke_up, F.data.in_({"yes", "no"}))
 async def process_woke_up(callback: CallbackQuery, state: FSMContext):
+    # Обработка информации о пробуждениях
     await callback.answer()
     await state.update_data(woke_up=(callback.data == "yes"))
     # next вопрос
@@ -54,6 +62,7 @@ async def process_woke_up(callback: CallbackQuery, state: FSMContext):
 
 @router.callback_query(SleepSurvey.tired, F.data.in_({"yes", "no"}))
 async def process_tired(callback: CallbackQuery, state: FSMContext):
+    # Обработка информации об усталости
     await callback.answer()
     await state.update_data(tired=(callback.data == "yes"))
     # next вопрос
@@ -62,6 +71,7 @@ async def process_tired(callback: CallbackQuery, state: FSMContext):
 
 @router.message(SleepSurvey.sleep_hours, F.text)
 async def process_sleep_hours(message: Message, state: FSMContext):
+    # Обработка количества часов сна
     try:
         hours = float(message.text)
         if 0 <= hours <= 24:
@@ -78,6 +88,7 @@ async def process_sleep_hours(message: Message, state: FSMContext):
 
 @router.callback_query(SleepSurvey.stress_level, F.data.startswith("scale_"))
 async def process_stress_level(callback: CallbackQuery, state: FSMContext):
+    # Обработка уровня стресса
     await callback.answer()
     stress_level = int(callback.data.split("_")[1])
     await state.update_data(stress_level=stress_level)
@@ -87,6 +98,7 @@ async def process_stress_level(callback: CallbackQuery, state: FSMContext):
 
 @router.callback_query(SleepSurvey.food_before_sleep, F.data.in_({"heavy", "light", "none"}))
 async def process_food(callback: CallbackQuery, state: FSMContext):
+    # Обработка информации о еде перед сном
     await callback.answer()
     food_map = {"heavy": "тяжёлую", "light": "лёгкую", "none": "не ел"}
     await state.update_data(food_before_sleep=food_map[callback.data])
@@ -96,6 +108,7 @@ async def process_food(callback: CallbackQuery, state: FSMContext):
 
 @router.message(SleepSurvey.sleep_time, F.text.regexp(r"^([01]?[0-9]|2[0-3]):[0-5][0-9]$"))
 async def process_sleep_time(message: Message, state: FSMContext):
+    # Обработка времени сна
     await state.update_data(sleep_time=message.text)
     # next вопрос
     await message.answer("Что ещё вы можете дополнить? (Если нечего добавить, напишите 'нет'):", reply_markup=back_to_menu)
@@ -103,22 +116,30 @@ async def process_sleep_time(message: Message, state: FSMContext):
 
 @router.message(SleepSurvey.sleep_time)
 async def process_invalid_sleep_time(message: Message):
+    # Обработка некорректного формата времени
     await message.answer("Пожалуйста, введите время в правильном формате (ЧЧ:ММ, например 23:45):", reply_markup=back_to_menu)
 
 @router.message(SleepSurvey.additional_info)
 async def process_additional_info(message: Message, state: FSMContext):
+    # Обработка дополнительной информации и завершение опроса
     if message.text.lower() != 'нет':
         await state.update_data(additional_info=message.text)
     
     # Получаем все собранные данные
     data = await state.get_data()
     
-    # Сохраняем данные в базу
-    await save_sleep_entry(message.from_user.id, data)
+    try:
+        # Сохраняем данные в базу
+        await save_sleep_entry(message.from_user.id, data)
+        logger.info(f"Данные о сне сохранены для пользователя {message.from_user.id}")
+        
+        # Генерируем анализ сна
+        prompt = get_sleep_analysis_prompt(data)
+        analysis = await generate_response(prompt)
+        
+        await message.answer(f"Анализ вашего сна:\n\n{analysis}", reply_markup=back_to_menu)
+    except Exception as e:
+        logger.error(f"Ошибка при сохранении данных о сне: {e}")
+        await message.answer("Произошла ошибка при сохранении данных. Попробуйте позже.", reply_markup=back_to_menu)
     
-    # Генерируем анализ сна
-    prompt = get_sleep_analysis_prompt(data)
-    analysis = await generate_response(prompt)
-    
-    await message.answer(f"Анализ вашего сна:\n\n{analysis}", reply_markup=back_to_menu)
     await state.clear()

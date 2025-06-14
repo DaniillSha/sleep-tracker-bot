@@ -1,16 +1,17 @@
-import pandas as pd
-import numpy as np
-from scipy import stats
-from typing import Dict, Tuple
-from datetime import datetime, timedelta
 import logging
-from bot.ai.prompts import format_sleep_recommendation_prompt
+from datetime import datetime, timedelta
+from typing import Dict, Tuple
+
+import numpy as np
+import pandas as pd
+from scipy import stats
+
 from bot.ai.generator import generate_response
+from bot.ai.prompts import format_sleep_recommendation_prompt
 from .sleep_visualization import create_sleep_visualizations
 
 logger = logging.getLogger(__name__)
 
-    #bot/ai/sleep_stats.py
 async def calculate_sleep_stats(df: pd.DataFrame) -> Dict:
     # Расчет статистики сна
     try:
@@ -42,12 +43,14 @@ async def calculate_sleep_stats(df: pd.DataFrame) -> Dict:
             avg_mins = int(avg_minutes % 60)
             avg_bedtime = f"{int(avg_hours):02d}:{avg_mins:02d}"
         except Exception as e:
+            logger.error(f"Ошибка при анализе времени сна: {e}")
             avg_bedtime = "нет данных"
         
         # Корреляции
         try:
             stress_feeling_corr = round(stats.pearsonr(df['stress_score'], df['feeling_score'])[0], 2)
         except Exception as e:
+            logger.error(f"Ошибка при расчете корреляции стресс-самочувствие: {e}")
             stress_feeling_corr = 0.0
         
         try:
@@ -60,13 +63,14 @@ async def calculate_sleep_stats(df: pd.DataFrame) -> Dict:
             else:
                 food_wake_corr = 0.0
         except Exception as e:
+            logger.error(f"Ошибка при расчете корреляции еда-пробуждения: {e}")
             food_wake_corr = 0.0
         
         # Создаем визуализации
         try:
             plot1_path, plot2_path = create_sleep_visualizations(df)
         except Exception as e:
-            logger.error(f"Error creating visualizations: {e}")
+            logger.error(f"Ошибка при создании визуализаций: {e}")
             plot1_path = None
             plot2_path = None
         
@@ -93,14 +97,14 @@ async def calculate_sleep_stats(df: pd.DataFrame) -> Dict:
             prompt = format_sleep_recommendation_prompt(stats_dict)
             recommendation = await generate_response(prompt)
         except Exception as e:
-            logger.error(f"Error generating recommendation: {e}")
+            logger.error(f"Ошибка при генерации рекомендации: {e}")
             recommendation = "Продолжайте вести дневник сна для отслеживания своих привычек"
         
         stats_dict['recommendation'] = recommendation
         return stats_dict
         
     except Exception as e:
-        logger.error(f"Error in calculate_sleep_stats: {e}")
+        logger.error(f"Ошибка в calculate_sleep_stats: {e}")
         raise
 
 def format_stats_message(stats: Dict) -> str:
@@ -124,4 +128,5 @@ def format_stats_message(stats: Dict) -> str:
         
         return "\n".join(message)
     except Exception as e:
+        logger.error(f"Ошибка при форматировании статистики: {e}")
         return "Произошла ошибка при формировании статистики. Пожалуйста, попробуйте позже." 
